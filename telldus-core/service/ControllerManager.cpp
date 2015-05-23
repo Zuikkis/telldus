@@ -185,6 +185,8 @@ void ControllerManager::loadControllers() {
 		int type = TELLSTICK_CONTROLLER_TELLSTICK;
 		if ((*it).pid == 0x0c31) {
 			type = TELLSTICK_CONTROLLER_TELLSTICK_DUO;
+		} else if ((*it).pid == 0x9999) {
+			type = TELLSTICK_CONTROLLER_TELLSTICK_NET;
 		}
 		int controllerId = 0;
 		// See if the controller matches one of the loaded, non available controllers
@@ -270,7 +272,7 @@ void ControllerManager::queryControllerStatus() {
 
 	if(!tellStickControllers.size() || reloadControllers) {
 		// no tellstick at all found, or controller was reset
-		Log::debug("TellStick query: Rescanning USB ports");  // only log as debug, since this will happen all the time if no TellStick is connected
+		Log::debug("TellStick query: Rescanning USB ports or network");  // only log as debug, since this will happen all the time if no TellStick is connected
 		loadControllers();
 	}
 }

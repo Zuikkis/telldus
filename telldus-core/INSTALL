@@ -20,7 +20,7 @@ need to run cmake.
 
 To configure telldus-core for your machine type:
 
-	cmake .
+	cmake -DFORCE_COMPILE_FROM_TRUNK=TRUE .
 
 in the package directory.
 

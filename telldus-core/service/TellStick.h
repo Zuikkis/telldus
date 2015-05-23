@@ -14,8 +14,9 @@
 
 class TellStickDescriptor {
 public:
-	std::string serial;
+	std::string serial, address;
 	int vid, pid;
+	int type;
 };
 
 class TellStick : public Controller, public TelldusCore::Thread {
@@ -38,14 +39,13 @@ public:
 	static std::string createTPacket( const std::string & );
 	static std::string convertSToT(  unsigned char t0, unsigned char t1, unsigned char t2, unsigned char t3, const std::string &data );
 
+
 protected:
 	void processData( const std::string &data );
 	void run();
-	void setBaud( int baud );
 	void stop();
 
 private:
-	static std::list<TellStickDescriptor> findAllByVIDPID( int vid, int pid );
 
 	class PrivateData;
 	PrivateData *d;
