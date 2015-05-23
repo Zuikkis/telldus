@@ -13,6 +13,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include "common/common.h"
 
 #include "service/ControllerMessage.h"
 #include "common/Mutex.h"
@@ -705,7 +706,7 @@ void DeviceManager::handleSensorMessage(const ControllerMessage &msg) {
 		if (!TelldusCore::comparei((*it)->model(), msg.model())) {
 			continue;
 		}
-		if ((*it)->id() != msg.getInt64Parameter("id")) {
+		if ((*it)->id() != strtol(msg.getParameter("id").c_str(), NULL, 10)) {
 			continue;
 		}
 		sensor = *it;
@@ -713,7 +714,8 @@ void DeviceManager::handleSensorMessage(const ControllerMessage &msg) {
 	}
 
 	if (!sensor) {
-		sensor = new Sensor(msg.protocol(), msg.model(), msg.getInt64Parameter("id"));
+
+		sensor = new Sensor(msg.protocol(), msg.model(), strtol(msg.getParameter("id").c_str(), NULL, 10));
 		d->sensorList.push_back(sensor);
 	}
 	TelldusCore::MutexLocker sensorLocker(sensor);
