@@ -74,8 +74,7 @@ uint64_t ControllerMessage::getInt64Parameter(const std::string &key) const {
 	if (strValue.substr(0, 2).compare("0x") == 0) {
 		return TelldusCore::hexTo64l(strValue);
 	}
-	// TODO(micke): strtol() does not return uint64_t. Create a platform independent version similar to hexTo64l()
-	return strtol(strValue.c_str(), NULL, 10);
+	return strtoull(strValue.c_str(), NULL, 16);
 }
 
 std::string ControllerMessage::getParameter(const std::string &key) const {
