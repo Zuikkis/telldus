@@ -63,7 +63,7 @@ TellStick::TellStick(int controllerId, TelldusCore::EventRef event, TelldusCore:
 		addr.sin_family = AF_INET;
 		inet_pton(AF_INET, d->address.c_str(), &addr.sin_addr); // Set the  IP address
 		addr.sin_port = htons(42314);
-		char *tempMessage = "11:reglistener";
+		char *tempMessage = "B:reglistener";
 		ret = sendto(d->sd, tempMessage, strlen(tempMessage), 0, (struct sockaddr*)&addr, sizeof addr);
 
 		this->start();
@@ -118,6 +118,8 @@ void TellStick::processData( const std::string &data ) {
 
 	int prevpos = 0;
 
+//        Log::notice("processdata: %s", data.c_str());
+
 	while(pos != std::string::npos) {// Magic for not modifying firmware too much..
 		unsigned int x;
 		std::stringstream ss;
@@ -149,7 +151,7 @@ int TellStick::reset() {
 		addr.sin_family = AF_INET;
 		inet_pton(AF_INET, d->address.c_str(), &addr.sin_addr); // Set the  IP address
 		addr.sin_port = htons(42314);
-		char *tempMessage = "10:disconnect";
+		char *tempMessage = "A:disconnect";
 		ret = sendto(d->sd, tempMessage, strlen(tempMessage), 0, (struct sockaddr*)&addr, sizeof addr);
 
 		this->start();
@@ -229,19 +231,41 @@ std::string string_to_hex(const std::string& input)
 }
 
 int TellStick::send( const std::string &strMessage ) {
+	std::string msg=strMessage;
+	std::stringstream sm;
 	int ret;
+
 	if (!d->open) {
 		return TELLSTICK_ERROR_NOT_FOUND;
 	} else if (strMessage.compare("N+") == 0) {
 		return TELLSTICK_SUCCESS;
 	}
 
-	std::string strMessage2 = strMessage.substr(1,strMessage.size());//-1
+// urgh, convert T back to S message
+	if (strMessage[0] == 'T') {
+		int len=strMessage[5],idx,shift=6,pos=6;
+
+		sm << 'S';
+		while (len--) {
+			idx=(strMessage[pos]>>shift) & 0x3;
+			sm << strMessage[idx+1];
+			shift-=2;
+			if (shift<0) {
+				shift=6;
+				pos++;
+			}
+		}
+		sm << '+';
+		msg= sm.str();
+	}
+
+	std::string strMessage2 = msg.substr(1,msg.size());//-1
 	int msgSize = strMessage2.size();
 	std::stringstream out;
-	out << msgSize;
+	out << std::hex << msgSize;
 	std::string s = out.str();
-	std::string compiledMessage = std::string("4:sendh1:T") + s + ":" + strMessage2;
+
+	std::string compiledMessage = std::string("4:sendh1:S") + s + ":" + strMessage2;
 	unsigned char *tempMessage = new unsigned char[compiledMessage.size()];
 	memcpy(tempMessage, compiledMessage.c_str(), compiledMessage.size());
 
@@ -328,6 +352,9 @@ std::list<TellStickDescriptor> TellStick::findAll() {
 		td.serial = x.at(2).c_str();
 		td.address = std::string(ipstr);
 		tellstick.push_back(td);
+
+	        Log::notice("Found TellStick (%X/%X) with serial %s", td.vid, td.pid, td.serial.c_str());
+
 	}
 	close(sd);
 

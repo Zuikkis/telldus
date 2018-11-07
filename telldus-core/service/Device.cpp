@@ -147,6 +147,7 @@ int Device::doAction(int action, unsigned char data, Controller *controller) {
 		// Syntax error in configuration, no such protocol
 		return TELLSTICK_ERROR_CONFIG_SYNTAX;
 	}
+
 	// Try to determine if we need to call another method due to masking
 	int method = this->isMethodSupported(action);
 	if (method <= 0) {
@@ -156,6 +157,8 @@ int Device::doAction(int action, unsigned char data, Controller *controller) {
 	if (code == "") {
 		return TELLSTICK_ERROR_METHOD_NOT_SUPPORTED;
 	}
+
+
 	if (code[0] != 'S' && code[0] != 'T' && code[0] != 'P' && code[0] != 'R') {
 		// Try autodetect sendtype
 		TellStick *tellstick = reinterpret_cast<TellStick *>(controller);
@@ -163,7 +166,7 @@ int Device::doAction(int action, unsigned char data, Controller *controller) {
 			return TELLSTICK_ERROR_UNKNOWN;
 		}
 		unsigned int maxlength = 80;
-		if (tellstick->pid() == 0x0c31) {
+		if ((tellstick->pid() == 0x0c31) || (tellstick->pid() == 0x9999)) {
 			maxlength = 512;
 		}
 		if (code.length() <= maxlength) {
