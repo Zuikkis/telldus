@@ -14,6 +14,7 @@
 #include <string>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 #include "service/TellStick.h"
 #include "service/Log.h"
@@ -23,6 +24,7 @@
 #include "common/Mutex.h"
 #include "common/Strings.h"
 #include "common/common.h"
+
 
 typedef struct _EVENT_HANDLE {
 	pthread_cond_t eCondVar;
@@ -175,6 +177,8 @@ void TellStick::run() {
 		d->running = true;
 	}
 
+	time_t lasttime;
+
 	int numbytes;
 	struct sockaddr_in addr;
 	memset(&addr, 0, sizeof addr);
@@ -190,6 +194,8 @@ void TellStick::run() {
 	    perror("Error");
 	}
 
+	lasttime=time(NULL);
+
 	while(1) {
 		// Is there any better way then sleeping between reads?
 		msleep(100);
@@ -197,6 +203,20 @@ void TellStick::run() {
 		if (!d->running) {
 			break;
 		}
+
+		if (((time(NULL)-lasttime)>=60) && d->open && d->sd != -1) { //reconnect after 1minute of idle
+			struct sockaddr_in addr; // Make an endpoint
+			memset(&addr, 0, sizeof addr);
+			addr.sin_family = AF_INET;
+			inet_pton(AF_INET, d->address.c_str(), &addr.sin_addr); // Set the  IP address
+			addr.sin_port = htons(42314);
+			char *tempMessage = "B:reglistener";
+			sendto(d->sd, tempMessage, strlen(tempMessage), 0, (struct sockaddr*)&addr, sizeof addr);
+
+			Log::notice("Reconnecting due to inactivity");
+			lasttime=time(NULL);
+		}
+
 		memset(buf, 0, sizeof(buf));
 		numbytes = 0;
 
@@ -206,9 +226,10 @@ void TellStick::run() {
 		if (numbytes < 1) {
 			continue;
 		}
-		//Log::debug("CLAES in run() recieved %d bytes with %s", numbytes, buf);
+//		Log::notice("CLAES in run() recieved %d bytes with %s", numbytes, buf);
 
 		processData( reinterpret_cast<char *>(&buf) );
+		lasttime=time(NULL); 
 	}
 }
 #include <algorithm>
